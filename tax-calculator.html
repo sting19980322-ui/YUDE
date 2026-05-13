@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>外贸退税利润计算器</title>
+<style>
+body { font-family: Arial; padding: 20px; background:#f6f7fb; }
+.container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+h2 { text-align:center; }
+.row { display:flex; gap:10px; margin-bottom:10px; }
+input, select { flex:1; padding:8px; }
+button { padding:10px 15px; cursor:pointer; }
+table { width:100%; margin-top:20px; border-collapse: collapse; }
+th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+.result { margin-top:20px; font-size:18px; font-weight:bold; }
+</style>
+</head>
+
+<body>
+<div class="container">
+<h2>外贸退税 & 利润计算器</h2>
+
+<div class="row">
+<input id="usd" placeholder="收入 USD" />
+<input id="rate" placeholder="汇率 (如 7.1)" />
+</div>
+
+<div class="row">
+<input id="cost" placeholder="采购成本 RMB" />
+<input id="hs" placeholder="HS Code（可备注）" />
+</div>
+
+<div class="row">
+<select id="taxRate">
+<option value="0.13">13%</option>
+<option value="0.09">9%</option>
+<option value="0.08">8%</option>
+<option value="0.05">5%</option>
+</select>
+
+<button onclick="addProduct()">添加产品</button>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>HS Code</th>
+<th>退税率</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+<button onclick="calc()">计算利润</button>
+
+<div class="result" id="result"></div>
+</div>
+
+<script>
+let products = [];
+
+function addProduct() {
+    const hs = document.getElementById('hs').value;
+    const rate = document.getElementById('taxRate').value;
+
+    products.push({ hs, rate });
+
+    render();
+}
+
+function render() {
+    const tbody = document.getElementById('list');
+    tbody.innerHTML = "";
+
+    products.forEach((p, i) => {
+        tbody.innerHTML += `
+        <tr>
+            <td>${p.hs}</td>
+            <td>${(p.rate*100).toFixed(0)}%</td>
+            <td><button onclick="del(${i})">删除</button></td>
+        </tr>`;
+    });
+}
+
+function del(i) {
+    products.splice(i,1);
+    render();
+}
+
+function calc() {
+    let usd = parseFloat(document.getElementById('usd').value || 0);
+    let rate = parseFloat(document.getElementById('rate').value || 0);
+    let cost = parseFloat(document.getElementById('cost').value || 0);
+
+    let income = usd * rate;
+
+    // 简化：平均退税率
+    let avgTax = products.length
+        ? products.reduce((s,p)=>s+parseFloat(p.rate),0)/products.length
+        : 0;
+
+    let refund = income * avgTax;
+
+    let profit = income + refund - cost;
+
+    document.getElementById('result').innerHTML =
+        `收入: ${income.toFixed(2)} RMB | 退税: ${refund.toFixed(2)} RMB | 利润: ${profit.toFixed(2)} RMB`;
+}
+</script>
+</body>
+</html>
