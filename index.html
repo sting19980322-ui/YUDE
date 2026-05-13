@@ -195,7 +195,7 @@
     .metric b { display: block; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
     .metric strong { font-size: 24px; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
     .metric.highlight { border-color: rgba(255,184,0,.55); background: #fffaf0; }
-    .metric.profit strong.negative { color: var(--danger); }
+    .metric.profit highlight strong.negative { color: var(--danger); }
 
     .fees {
       display: grid;
@@ -250,10 +250,6 @@
 
     <section class="block">
       <div class="grid">
-        <div class="field"><label>测算表号</label><input id="sheetNo" value="CK-2026-001" /></div>
-        <div class="field"><label>经办人</label><input id="handler" placeholder="例如：Theo" /></div>
-        <div class="field"><label>客户名称</label><input id="customer" placeholder="例如：Priya Tanwar" /></div>
-        <div class="field"><label>测算日期</label><input id="calcDate" type="date" /></div>
         <div class="field"><label>成交方式</label><input id="tradeTerm" value="FOB" /></div>
         <div class="field"><label>出口币种</label><input id="currency" value="USD" /></div>
         <div class="field"><label>客户付款 / 出口金额 USD</label><input id="exportUsd" type="number" step="0.01" value="405" /></div>
@@ -435,7 +431,7 @@
     }
 
     function collectData() {
-      const fields = ['sheetNo','handler','customer','calcDate','tradeTerm','currency','exportUsd','exchangeRate','feeDomestic','feeInternational','feePort','feeOperating','feeBank','feeOther'];
+      const fields = ['tradeTerm','currency','exportUsd','exchangeRate','feeDomestic','feeInternational','feePort','feeOperating','feeBank','feeOther'];
       const data = { fields: {}, rows: [] };
       fields.forEach(id => data.fields[id] = document.getElementById(id).value);
       [...tbody.children].forEach(tr => data.rows.push({
@@ -460,7 +456,6 @@
       const saved = localStorage.getItem('exportTaxRefundCalculator');
       if (!saved) {
         defaultRows.forEach((r, i) => rowTemplate(r, i + 1));
-        document.getElementById('calcDate').valueAsDate = new Date();
         recalc();
         return;
       }
@@ -482,14 +477,11 @@
       if (!confirm('确定清空当前测算表？')) return;
       localStorage.removeItem('exportTaxRefundCalculator');
       tbody.innerHTML = '';
-      ['sheetNo','handler','customer'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('sheetNo').value = 'CK-2026-001';
       document.getElementById('tradeTerm').value = 'FOB';
       document.getElementById('currency').value = 'USD';
       document.getElementById('exportUsd').value = '0';
       document.getElementById('exchangeRate').value = '7.10';
       ['feeDomestic','feeInternational','feePort','feeOperating','feeBank','feeOther'].forEach(id => document.getElementById(id).value = '0');
-      document.getElementById('calcDate').valueAsDate = new Date();
       defaultRows.forEach((r, i) => rowTemplate(r, i + 1));
       recalc();
     }
@@ -522,7 +514,7 @@
       rows.push(['预计退税额合计', document.getElementById('refundTotal').textContent.replace('¥','').replaceAll(',',''), '费用合计', document.getElementById('feeTotal').textContent.replace('¥','').replaceAll(',',''), '退税后利润', document.getElementById('profitTotal').textContent.replace('¥','').replaceAll(',','')]);
       const csv = '\ufeff' + rows.map(r => r.map(cell => '"' + String(cell ?? '').replaceAll('"','""') + '"').join(',')).join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
+      const url = URL.revokeObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = '外贸订单退税测算表.csv';
