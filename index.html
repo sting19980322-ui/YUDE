@@ -16,6 +16,7 @@
       --accent: #187a3f;
       --accent-2: #ffb800;
       --danger: #a83a32;
+      --green: #249556;
       --white: #ffffff;
       --shadow: 0 18px 45px rgba(20, 55, 31, .13);
     }
@@ -173,7 +174,7 @@
     }
     td.left, th.left { text-align: left; padding-left: 8px; }
     td.result { background: #f4fff4; font-weight: 600; }
-    td.diff-cost { background: #fff2f2; }
+    td.income-diff { background: #f0fbf4; color: var(--green); font-weight:bold; }
     td.money, input.money { text-align: right; font-variant-numeric: tabular-nums; }
     td input, td select { border-radius: 6px; padding: 5px 6px; font-size: 12px; width: 100%; }
     .row-action { min-width: 50px; }
@@ -196,6 +197,7 @@
     .metric strong { font-size: 20px; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
     .metric.highlight { border-color: rgba(255,184,0,.55); background: #fffaf0; }
     .metric.profit strong.negative { color: var(--danger); }
+    .metric.income strong { color: var(--green); }
 
     .fees {
       display: grid;
@@ -239,15 +241,15 @@
       <div class="title-card">
         <div class="eyebrow">Export Tax Refund Calculator</div>
         <h1>外贸订单退税金额在线测算表</h1>
-        <p class="sub">区分<strong>票面开票税点</strong>与<strong>工厂实际收税点</strong>，自动计算税点差额成本、退税及真实利润，数据仅本地保存。</p>
+        <p class="sub">适配：实付工厂按8个税点、开票等额13%专票；自动计算税点差额收益、真实退税利润。</p>
       </div>
       <div class="note-card">
-        <h2>计算口径说明</h2>
+        <h2>业务计算口径</h2>
         <div class="formula">
-          <div>采购不含税 = 开票含税金额 ÷ (1+票面税率)</div>
-          <div>预计退税额 = 采购不含税 × 退税率</div>
-          <div>税点差额成本 = 采购不含税 × (票面税率-工厂实际税点)</div>
-          <div>真实订单利润 = 出口收入-开票含税+退税-费用-税点差额成本</div>
+          <div>不含税金额 = 工厂实付开票额 ÷ 1.13</div>
+          <div>税点差额收益 = 不含税 × (13% - 实际税点)</div>
+          <div>预计退税额 = 不含税金额 × 退税率</div>
+          <div>真实利润 = 出口收入 - 工厂实付 + 退税 + 税点差额 - 全部费用</div>
         </div>
       </div>
     </section>
@@ -277,13 +279,13 @@
               <th>退税类型</th>
               <th>数量</th>
               <th>含税单价</th>
-              <th>开票含税金额</th>
+              <th>工厂实付/开票金额</th>
               <th>票面税率%</th>
-              <th>工厂实扣税点%</th>
+              <th>实际税点%</th>
               <th>退税率%</th>
               <th>采购不含税</th>
               <th>预计退税</th>
-              <th class="diff-cost">税点差额成本</th>
+              <th class="income-diff">税点差额收益</th>
               <th>退税后成本</th>
               <th>供应商/备注</th>
               <th>操作</th>
@@ -304,9 +306,9 @@
 
       <div class="totals">
         <div class="metric"><b>出口收入人民币</b><strong id="rmbIncome">¥0.00</strong></div>
-        <div class="metric"><b>开票含税合计</b><strong id="purchaseVatTotal">¥0.00</strong></div>
+        <div class="metric"><b>工厂实付合计</b><strong id="purchaseVatTotal">¥0.00</strong></div>
         <div class="metric"><b>预计退税合计</b><strong id="refundTotal">¥0.00</strong></div>
-        <div class="metric"><b>税点差额总成本</b><strong id="diffCostTotal">¥0.00</strong></div>
+        <div class="metric income"><b>税点差额总收益</b><strong id="diffCostTotal">¥0.00</strong></div>
         <div class="metric"><b>费用合计</b><strong id="feeTotal">¥0.00</strong></div>
         <div class="metric highlight profit"><b>真实订单利润</b><strong id="profitTotal">¥0.00</strong></div>
         <div class="metric"><b>整体利润率</b><strong id="marginRate">0.00%</strong></div>
@@ -314,7 +316,7 @@
       </div>
     </section>
 
-    <p class="tips"><strong>使用说明：</strong>票面税率一般填13%；工厂实扣税点按实际收款点数填（如8%）；系统自动计算多出5%税点差额成本，真实利润已扣掉这笔额外成本。不可退税行退税率填0即可。</p>
+    <p class="tips"><strong>使用说明：</strong>工厂实付金额=开票金额；票面固定13%，实际税点填8%；系统自动算5%税点差额收益，直接加进真实利润，完全匹配你实际做账。</p>
   </main>
 
   <script>
@@ -324,8 +326,8 @@
     const percentValue = v => num(v) / 100;
 
     const defaultRows = [
-      { name: '出口商品采购', hs: '', kind: 'refund', qty: 1, price: 0, vatRate: 13, factoryRate: 8, refundRate: 13, supplier: '' },
-      { name: '包装/辅料', hs: '', kind: 'noRefund', qty: 1, price: 0, vatRate: 13, factoryRate: 8, refundRate: 0, supplier: '' }
+      { name: '出口商品采购', hs: '', kind: 'refund', qty: 1, price: 0, vatRate: 13, realTax: 8, refundRate: 13, supplier: '' },
+      { name: '包装/辅料', hs: '', kind: 'noRefund', qty: 1, price: 0, vatRate: 13, realTax: 8, refundRate: 0, supplier: '' }
     ];
 
     function rowTemplate(row = {}, index = 1) {
@@ -344,7 +346,7 @@
         <td><input class="price money" type="number" step="0.01" value="${row.price ?? 0}" /></td>
         <td><input class="amountVat money" type="number" step="0.01" value="${row.amountVat ?? ''}" placeholder="自动" /></td>
         <td><input class="vatRate money" type="number" step="0.01" value="${row.vatRate ?? 13}" /></td>
-        <td><input class="factoryRate money" type="number" step="0.01" value="${row.factoryRate ?? 8}" /></td>
+        <td><input class="realTax money" type="number" step="0.01" value="${row.realTax ?? 8}" /></td>
         <td><input class="refundRate money" type="number" step="0.01" value="${row.refundRate ?? 13}" /></td>
         <td class="result money noVat">¥0.00</td>
         <td class="result money refund">¥0.00</td>
@@ -358,7 +360,7 @@
     }
 
     function addRow() {
-      rowTemplate({ name: '', kind: 'refund', qty: 1, price: 0, vatRate: 13, factoryRate: 8, refundRate: 13 }, tbody.children.length + 1);
+      rowTemplate({ name: '', kind: 'refund', qty: 1, price: 0, vatRate: 13, realTax: 8, refundRate: 13 }, tbody.children.length + 1);
       recalc();
     }
 
@@ -389,26 +391,29 @@
         if (!amountInput.value && qty && price) amountVat = qty * price;
 
         const vatRate = percentValue(tr.querySelector('.vatRate').value);
-        const factoryRate = percentValue(tr.querySelector('.factoryRate').value);
+        const realTax = percentValue(tr.querySelector('.realTax').value);
         const refundRate = kind === 'refund' ? percentValue(tr.querySelector('.refundRate').value) : 0;
 
+        // 按13%拆分不含税
         const noVat = amountVat / (1 + vatRate);
         const inputVat = amountVat - noVat;
         const refund = kind === 'refund' ? noVat * refundRate : 0;
         const nonRefund = kind === 'refund' ? noVat * Math.max(vatRate - refundRate, 0) : inputVat;
-        const diffCost = noVat * Math.max(vatRate - factoryRate, 0);
-        const netCost = amountVat - refund + diffCost;
+        
+        // 税点差额收益 13%-实际税点
+        const diffIncome = noVat * (vatRate - realTax);
+        const netCost = amountVat - refund;
 
         purchaseVatTotal += amountVat;
         purchaseNoVatTotal += noVat;
         refundTotal += refund;
         nonRefundTotal += nonRefund;
-        diffCostTotal += diffCost;
+        diffCostTotal += diffIncome;
         netCostTotal += netCost;
 
         tr.querySelector('.noVat').textContent = money(noVat);
         tr.querySelector('.refund').textContent = money(refund);
-        tr.querySelector('.diffCost').textContent = money(diffCost);
+        tr.querySelector('.diffCost').textContent = money(diffIncome);
         tr.querySelector('.netCost').textContent = money(netCost);
       });
 
@@ -416,8 +421,8 @@
       const feeTotal = ['feeDomestic','feeInternational','feePort','feeOperating','feeBank','feeOther']
         .reduce((s, id) => s + num(document.getElementById(id).value), 0);
 
-      // 真实利润 = 出口收入 - 开票含税 + 退税 - 费用 - 税点差额成本
-      const profit = rmbIncome - purchaseVatTotal + refundTotal - feeTotal - diffCostTotal;
+      // 真实利润：出口收入 - 工厂实付 + 退税 + 税点差额收益 - 费用
+      const profit = rmbIncome - purchaseVatTotal + refundTotal + diffCostTotal - feeTotal;
       const margin = rmbIncome ? profit / rmbIncome * 100 : 0;
 
       document.getElementById('rmbIncome').textContent = money(rmbIncome);
@@ -447,7 +452,7 @@
         price: tr.querySelector('.price').value,
         amountVat: tr.querySelector('.amountVat').value,
         vatRate: tr.querySelector('.vatRate').value,
-        factoryRate: tr.querySelector('.factoryRate').value,
+        realTax: tr.querySelector('.realTax').value,
         refundRate: tr.querySelector('.refundRate').value,
         supplier: tr.querySelector('.supplier').value
       }));
@@ -468,8 +473,7 @@
       try {
         const data = JSON.parse(saved);
         Object.entries(data.fields || {}).forEach(([id, value]) => {
-          const el = document.getElementById(id);
-          if (el) el.value = value;
+          const el = document.getElementById(id).value = value;
         });
         (data.rows && data.rows.length ? data.rows : defaultRows).forEach((r, i) => rowTemplate(r, i + 1));
         recalc();
@@ -494,7 +498,7 @@
 
     function exportCsv() {
       recalc();
-      const header = ['序号','项目名称','HS编码','退税类型','数量','含税单价','开票含税金额','票面税率%','工厂实扣税点%','退税率%','采购不含税','预计退税','税点差额成本','退税后真实成本','供应商/备注'];
+      const header = ['序号','项目名称','HS编码','退税类型','数量','含税单价','工厂实付开票金额','票面税率%','实际税点%','退税率%','采购不含税','预计退税','税点差额收益','退税后成本','供应商/备注'];
       const rows = [header];
       [...tbody.children].forEach((tr, i) => {
         rows.push([
@@ -506,7 +510,7 @@
           tr.querySelector('.price').value,
           tr.querySelector('.amountVat').value || (num(tr.querySelector('.qty').value) * num(tr.querySelector('.price').value)).toFixed(2),
           tr.querySelector('.vatRate').value,
-          tr.querySelector('.factoryRate').value,
+          tr.querySelector('.realTax').value,
           tr.querySelector('.refundRate').value,
           tr.querySelector('.noVat').textContent.replace('¥',''),
           tr.querySelector('.refund').textContent.replace('¥',''),
@@ -517,7 +521,7 @@
       });
       rows.push([]);
       rows.push(['出口金额USD', document.getElementById('exportUsd').value, '汇率', document.getElementById('exchangeRate').value, '出口收入', document.getElementById('rmbIncome').textContent.replace('¥','')]);
-      rows.push(['开票含税合计', document.getElementById('purchaseVatTotal').textContent.replace('¥',''), '退税合计', document.getElementById('refundTotal').textContent.replace('¥',''), '税点差额成本', document.getElementById('diffCostTotal').textContent.replace('¥','')]);
+      rows.push(['工厂实付合计', document.getElementById('purchaseVatTotal').textContent.replace('¥',''), '退税合计', document.getElementById('refundTotal').textContent.replace('¥',''), '税点差额收益', document.getElementById('diffCostTotal').textContent.replace('¥','')]);
       rows.push(['费用合计', document.getElementById('feeTotal').textContent.replace('¥',''), '真实利润', document.getElementById('profitTotal').textContent.replace('¥',''), '利润率', document.getElementById('marginRate').textContent]);
       
       const csv = '\ufeff' + rows.map(r => r.map(cell => '"' + String(cell ?? '').replaceAll('"','""') + '"').join(',')).join('\n');
@@ -525,7 +529,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = '外贸退税测算_票面_工厂税点区分表.csv';
+      a.download = '外贸退税_实付8点开票13点测算表.csv';
       a.click();
       URL.revokeObjectURL(url);
     }
