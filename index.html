@@ -5,64 +5,533 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>外贸订单退税金额在线测算表</title>
   <style>
-    :root { --ink: #112018; --muted: #66746a; --line: #b9cdbf; --grid: #dfeadf; --paper: #fbfff9; --panel: #eef8ed; --panel-2: #d7efd8; --accent: #187a3f; --accent-2: #ffb800; --danger: #a83a32; --white: #ffffff; --shadow: 0 18px 45px rgba(20, 55, 31, .13); }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; }
-    body { font-family: "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif; background: radial-gradient(circle at 12% 8%, rgba(255,184,0,.18), transparent 28%), linear-gradient(135deg, #f4fff2 0%, #eef9ee 42%, #fffdf2 100%); color: var(--ink); padding: 28px; }
-    .shell { max-width: 1520px; margin: 0 auto; }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-  <script>
-    window.supabase = supabase.createClient(
-      'https://fswvklhzhmxlksaujjdx.supabase.co',
-      'sb_publishable_Jq7ON0RXGU37LrC25dZh5Q_fq12N9SI'
-    );
-
-    async function updateUserInfo() {
-      const { data } = await window.supabase.auth.getUser();
-      document.getElementById('userInfo').textContent = data.user ? `已登录: ${data.user.email}` : '未登录';
+    :root {
+      --ink: #112018;
+      --muted: #66746a;
+      --line: #b9cdbf;
+      --grid: #dfeadf;
+      --paper: #fbfff9;
+      --panel: #eef8ed;
+      --panel-2: #d7efd8;
+      --accent: #187a3f;
+      --accent-2: #ffb800;
+      --danger: #a83a32;
+      --white: #ffffff;
+      --shadow: 0 18px 45px rgba(20, 55, 31, .13);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('btnSignUp').addEventListener('click', async () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { data, error } = await window.supabase.auth.signUp({ email, password });
-        console.log('注册', data, error);
-        alert(error ? error.message : '注册成功，请检查邮箱验证');
-        updateUserInfo();
-      });
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(255,184,0,.18), transparent 28%),
+        linear-gradient(135deg, #f4fff2 0%, #eef9ee 42%, #fffdf2 100%);
+      color: var(--ink);
+      padding: 28px;
+    }
 
-      document.getElementById('btnSignIn').addEventListener('click', async () => {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
-        console.log('登录', data, error);
-        alert(error ? error.message : '登录成功');
-        updateUserInfo();
-      });
+    .shell { max-width: 1520px; margin: 0 auto; }
 
-      document.getElementById('btnSignOut').addEventListener('click', async () => {
-        await window.supabase.auth.signOut();
-        updateUserInfo();
-      });
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 20px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
 
-      updateUserInfo();
-    });
-  </script>
+    .title-card, .note-card, .block {
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(24,122,63,.20);
+      box-shadow: var(--shadow);
+      border-radius: 22px;
+      overflow: hidden;
+    }
+
+    .title-card { padding: 24px 28px; position: relative; }
+    .title-card:before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 10px;
+      background: linear-gradient(var(--accent), var(--accent-2));
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: .28em;
+      color: var(--accent);
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      letter-spacing: .15em;
+      line-height: 1.05;
+      font-weight: 900;
+    }
+    .sub { margin: 12px 0 0; color: var(--muted); line-height: 1.7; }
+
+    .note-card { padding: 20px 22px; }
+    .note-card h2 { margin: 0 0 10px; font-size: 18px; }
+    .formula {
+      display: grid;
+      gap: 8px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #12341f;
+    }
+    .formula div {
+      background: var(--panel);
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    button, .button-like {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: var(--ink);
+      color: var(--white);
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(17,32,24,.16);
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(17,32,24,.20); }
+    button.secondary { background: var(--accent); }
+    button.ghost { background: #e8f4e8; color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
+    button.warn { background: var(--danger); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      padding: 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 700;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 9px 10px;
+      font: 14px/1.35 inherit;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(24,122,63,.12); }
+    input[readonly] { background: #f5f8f5; color: #35513d; }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 58vh;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    table { width: 100%; border-collapse: collapse; min-width: 1480px; }
+    th, td {
+      border: 1px solid #8ea994;
+      padding: 5px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 13px;
+      background: rgba(255,255,255,.75);
+    }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #cfead0;
+      font-weight: 900;
+      color: #0e2a17;
+      white-space: nowrap;
+    }
+    td.left, th.left { text-align: left; }
+    td.result { background: #f4fff4; font-weight: 800; }
+    td.money, input.money { text-align: right; font-variant-numeric: tabular-nums; }
+    td input, td select { border-radius: 6px; padding: 6px; font-size: 13px; }
+    .row-action { min-width: 54px; }
+    .tiny { padding: 6px 9px; font-size: 12px; box-shadow: none; }
+
+    .totals {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 18px;
+      background: linear-gradient(135deg, rgba(215,239,216,.95), rgba(255,255,255,.9));
+    }
+    .metric {
+      border: 1px solid rgba(24,122,63,.18);
+      background: var(--white);
+      border-radius: 18px;
+      padding: 14px 16px;
+      min-height: 86px;
+    }
+    .metric b { display: block; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .metric strong { font-size: 24px; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+    .metric.highlight { border-color: rgba(255,184,0,.55); background: #fffaf0; }
+    .metric.profit strong.negative { color: var(--danger); }
+
+    .fees {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      padding: 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
+    }
+
+    .tips {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .tips strong { color: var(--ink); }
+
+    @media (max-width: 980px) {
+      body { padding: 14px; }
+      .hero, .grid, .totals, .fees { grid-template-columns: 1fr; }
+      .table-wrap { max-height: none; }
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .toolbar, .note-card, button { display: none !important; }
+      .title-card, .block { box-shadow: none; border-radius: 0; }
+      .table-wrap { max-height: none; overflow: visible; }
+      input, select { border: 0; background: transparent; padding: 0; }
+    }
+  </style>
 </head>
 <body>
-  <div id="authContainer" style="margin-bottom:20px;">
-    <input id="email" placeholder="邮箱">
-    <input id="password" type="password" placeholder="密码">
-    <button id="btnSignUp">注册</button>
-    <button id="btnSignIn">登录</button>
-    <button id="btnSignOut">登出</button>
-    <span id="userInfo" style="margin-left:10px;"></span>
-  </div>
-
   <main class="shell">
-    <!-- 原页面内容保持不变 -->
+    <section class="hero">
+      <div class="title-card">
+        <div class="eyebrow">Export Tax Refund Calculator</div>
+        <h1>外贸订单退税金额在线测算表</h1>
+        <p class="sub">适用于外贸企业订单报价、利润和预计退税测算。数据只保存在当前浏览器本地，不上传服务器。</p>
+      </div>
+      <div class="note-card">
+        <h2>默认计算口径</h2>
+        <div class="formula">
+          <div>采购不含税金额 = 采购含税金额 ÷ (1 + 专票税率)</div>
+          <div>预计退税额 = 可退税采购不含税金额 × 退税率</div>
+          <div>不予退税额 = 可退税采购不含税金额 × max(专票税率 - 退税率, 0)</div>
+          <div>订单利润 = 出口收入人民币 - 采购含税金额合计 + 预计退税额 - 费用合计</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="grid">
+        <div class="field"><label>测算表号</label><input id="sheetNo" value="CK-2026-001" /></div>
+        <div class="field"><label>经办人</label><input id="handler" placeholder="例如：Theo" /></div>
+        <div class="field"><label>客户名称</label><input id="customer" placeholder="例如：Priya Tanwar" /></div>
+        <div class="field"><label>测算日期</label><input id="calcDate" type="date" /></div>
+        <div class="field"><label>成交方式</label><input id="tradeTerm" value="FOB" /></div>
+        <div class="field"><label>出口币种</label><input id="currency" value="USD" /></div>
+        <div class="field"><label>客户付款 / 出口金额 USD</label><input id="exportUsd" type="number" step="0.01" value="405" /></div>
+        <div class="field"><label>结汇/测算汇率</label><input id="exchangeRate" type="number" step="0.0001" value="7.10" /></div>
+      </div>
+
+      <div class="toolbar">
+        <button class="secondary" onclick="addRow()">新增商品/采购行</button>
+        <button class="ghost" onclick="addFeeRow()">新增费用行</button>
+        <button class="ghost" onclick="exportCsv()">导出 CSV</button>
+        <button class="ghost" onclick="window.print()">打印 / 另存 PDF</button>
+        <button class="warn" onclick="resetAll()">清空重置</button>
+      </div>
+
+      <div class="table-wrap">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th style="width:64px">序号</th>
+              <th class="left" style="width:210px">项目名称</th>
+              <th style="width:120px">HS 编码</th>
+              <th style="width:80px">类型</th>
+              <th style="width:85px">数量</th>
+              <th style="width:105px">含税单价</th>
+              <th style="width:120px">采购含税金额</th>
+              <th style="width:90px">专票税率</th>
+              <th style="width:90px">退税率</th>
+              <th style="width:120px">采购不含税</th>
+              <th style="width:110px">进项税额</th>
+              <th style="width:115px">预计退税额</th>
+              <th style="width:115px">不予退税额</th>
+              <th style="width:130px">退税后成本</th>
+              <th style="width:150px">供应商/备注</th>
+              <th style="width:82px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="fees">
+        <div class="field"><label>国内运费</label><input id="feeDomestic" type="number" step="0.01" value="0" /></div>
+        <div class="field"><label>国际运费</label><input id="feeInternational" type="number" step="0.01" value="764.35" /></div>
+        <div class="field"><label>报关/港杂/拖车</label><input id="feePort" type="number" step="0.01" value="0" /></div>
+        <div class="field"><label>经营费</label><input id="feeOperating" type="number" step="0.01" value="49.911" /></div>
+        <div class="field"><label>银行/平台手续费</label><input id="feeBank" type="number" step="0.01" value="0" /></div>
+        <div class="field"><label>其他费用</label><input id="feeOther" type="number" step="0.01" value="0" /></div>
+      </div>
+
+      <div class="totals">
+        <div class="metric"><b>出口收入人民币</b><strong id="rmbIncome">¥0.00</strong></div>
+        <div class="metric"><b>采购含税金额合计</b><strong id="purchaseVatTotal">¥0.00</strong></div>
+        <div class="metric"><b>采购不含税金额合计</b><strong id="purchaseNoVatTotal">¥0.00</strong></div>
+        <div class="metric"><b>进项税额合计</b><strong id="inputVatTotal">¥0.00</strong></div>
+        <div class="metric highlight"><b>预计退税额合计</b><strong id="refundTotal">¥0.00</strong></div>
+        <div class="metric"><b>不予退税额合计</b><strong id="nonRefundTotal">¥0.00</strong></div>
+        <div class="metric"><b>费用合计</b><strong id="feeTotal">¥0.00</strong></div>
+        <div class="metric profit highlight"><b>退税后订单利润 / 利润率</b><strong id="profitTotal">¥0.00</strong><div id="marginRate" class="tips" style="margin:6px 0 0"></div></div>
+      </div>
+    </section>
+
+    <p class="tips"><strong>使用说明：</strong>商品采购行选择“可退税”；运费、港杂、包装、手续费等一般作为费用或不可退税成本处理。若某项采购没有可用于出口退税的增值税专票，类型请选择“不可退税”。退税率需要你们根据 HS 编码自行确认后录入。</p>
   </main>
+
+  <script>
+    const tbody = document.getElementById('tbody');
+    const money = n => '¥' + (Number(n || 0)).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = v => Number(v || 0);
+    const percentValue = v => num(v) / 100;
+
+    const defaultRows = [
+      { name: '出口商品采购', hs: '', kind: 'refund', qty: 1, price: 0, vatRate: 13, refundRate: 13, supplier: '' },
+      { name: '包装/样品/辅料', hs: '', kind: 'noRefund', qty: 1, price: 0, vatRate: 13, refundRate: 0, supplier: '' }
+    ];
+
+    function rowTemplate(row = {}, index = 1) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="idx">${index}</td>
+        <td class="left"><input class="name" value="${row.name || ''}" placeholder="商品或费用名称" /></td>
+        <td><input class="hs" value="${row.hs || ''}" placeholder="HS" /></td>
+        <td>
+          <select class="kind">
+            <option value="refund" ${row.kind !== 'noRefund' ? 'selected' : ''}>可退税</option>
+            <option value="noRefund" ${row.kind === 'noRefund' ? 'selected' : ''}>不可退税</option>
+          </select>
+        </td>
+        <td><input class="qty money" type="number" step="0.0001" value="${row.qty ?? 1}" /></td>
+        <td><input class="price money" type="number" step="0.01" value="${row.price ?? 0}" /></td>
+        <td><input class="amountVat money" type="number" step="0.01" value="${row.amountVat ?? ''}" placeholder="自动" /></td>
+        <td><input class="vatRate money" type="number" step="0.01" value="${row.vatRate ?? 13}" /></td>
+        <td><input class="refundRate money" type="number" step="0.01" value="${row.refundRate ?? 13}" /></td>
+        <td class="result money noVat">¥0.00</td>
+        <td class="result money inputVat">¥0.00</td>
+        <td class="result money refund">¥0.00</td>
+        <td class="result money nonRefund">¥0.00</td>
+        <td class="result money netCost">¥0.00</td>
+        <td><input class="supplier" value="${row.supplier || ''}" placeholder="供应商/备注" /></td>
+        <td class="row-action"><button class="tiny warn" onclick="deleteRow(this)">删除</button></td>
+      `;
+      tbody.appendChild(tr);
+      tr.querySelectorAll('input,select').forEach(el => el.addEventListener('input', recalc));
+    }
+
+    function addRow() {
+      rowTemplate({ name: '', kind: 'refund', qty: 1, price: 0, vatRate: 13, refundRate: 13 }, tbody.children.length + 1);
+      recalc();
+    }
+
+    function addFeeRow() {
+      rowTemplate({ name: '', kind: 'noRefund', qty: 1, price: 0, vatRate: 13, refundRate: 0 }, tbody.children.length + 1);
+      recalc();
+    }
+
+    function deleteRow(btn) {
+      btn.closest('tr').remove();
+      renumber();
+      recalc();
+    }
+
+    function renumber() {
+      [...tbody.children].forEach((tr, i) => tr.querySelector('.idx').textContent = i + 1);
+    }
+
+    function recalc() {
+      let purchaseVatTotal = 0;
+      let purchaseNoVatTotal = 0;
+      let inputVatTotal = 0;
+      let refundTotal = 0;
+      let nonRefundTotal = 0;
+      let netCostTotal = 0;
+
+      [...tbody.children].forEach(tr => {
+        const kind = tr.querySelector('.kind').value;
+        const qty = num(tr.querySelector('.qty').value);
+        const price = num(tr.querySelector('.price').value);
+        const amountInput = tr.querySelector('.amountVat');
+        let amountVat = num(amountInput.value);
+        if (!amountInput.value && qty && price) amountVat = qty * price;
+        const vatRate = percentValue(tr.querySelector('.vatRate').value);
+        const refundRate = kind === 'refund' ? percentValue(tr.querySelector('.refundRate').value) : 0;
+        const noVat = vatRate > -1 ? amountVat / (1 + vatRate) : amountVat;
+        const inputVat = Math.max(amountVat - noVat, 0);
+        const refund = kind === 'refund' ? noVat * refundRate : 0;
+        const nonRefund = kind === 'refund' ? noVat * Math.max(vatRate - refundRate, 0) : 0;
+        const netCost = amountVat - refund;
+
+        purchaseVatTotal += amountVat;
+        purchaseNoVatTotal += noVat;
+        inputVatTotal += inputVat;
+        refundTotal += refund;
+        nonRefundTotal += nonRefund;
+        netCostTotal += netCost;
+
+        tr.querySelector('.noVat').textContent = money(noVat);
+        tr.querySelector('.inputVat').textContent = money(inputVat);
+        tr.querySelector('.refund').textContent = money(refund);
+        tr.querySelector('.nonRefund').textContent = money(nonRefund);
+        tr.querySelector('.netCost').textContent = money(netCost);
+      });
+
+      const rmbIncome = num(document.getElementById('exportUsd').value) * num(document.getElementById('exchangeRate').value);
+      const feeTotal = ['feeDomestic','feeInternational','feePort','feeOperating','feeBank','feeOther'].reduce((s, id) => s + num(document.getElementById(id).value), 0);
+      const profit = rmbIncome - purchaseVatTotal + refundTotal - feeTotal;
+      const margin = rmbIncome ? profit / rmbIncome * 100 : 0;
+
+      document.getElementById('rmbIncome').textContent = money(rmbIncome);
+      document.getElementById('purchaseVatTotal').textContent = money(purchaseVatTotal);
+      document.getElementById('purchaseNoVatTotal').textContent = money(purchaseNoVatTotal);
+      document.getElementById('inputVatTotal').textContent = money(inputVatTotal);
+      document.getElementById('refundTotal').textContent = money(refundTotal);
+      document.getElementById('nonRefundTotal').textContent = money(nonRefundTotal);
+      document.getElementById('feeTotal').textContent = money(feeTotal);
+      const profitEl = document.getElementById('profitTotal');
+      profitEl.textContent = money(profit);
+      profitEl.classList.toggle('negative', profit < 0);
+      document.getElementById('marginRate').textContent = '利润率：' + margin.toFixed(2) + '%';
+      saveLocal();
+    }
+
+    function collectData() {
+      const fields = ['sheetNo','handler','customer','calcDate','tradeTerm','currency','exportUsd','exchangeRate','feeDomestic','feeInternational','feePort','feeOperating','feeBank','feeOther'];
+      const data = { fields: {}, rows: [] };
+      fields.forEach(id => data.fields[id] = document.getElementById(id).value);
+      [...tbody.children].forEach(tr => data.rows.push({
+        name: tr.querySelector('.name').value,
+        hs: tr.querySelector('.hs').value,
+        kind: tr.querySelector('.kind').value,
+        qty: tr.querySelector('.qty').value,
+        price: tr.querySelector('.price').value,
+        amountVat: tr.querySelector('.amountVat').value,
+        vatRate: tr.querySelector('.vatRate').value,
+        refundRate: tr.querySelector('.refundRate').value,
+        supplier: tr.querySelector('.supplier').value
+      }));
+      return data;
+    }
+
+    function saveLocal() {
+      localStorage.setItem('exportTaxRefundCalculator', JSON.stringify(collectData()));
+    }
+
+    function loadLocal() {
+      const saved = localStorage.getItem('exportTaxRefundCalculator');
+      if (!saved) {
+        defaultRows.forEach((r, i) => rowTemplate(r, i + 1));
+        document.getElementById('calcDate').valueAsDate = new Date();
+        recalc();
+        return;
+      }
+      try {
+        const data = JSON.parse(saved);
+        Object.entries(data.fields || {}).forEach(([id, value]) => {
+          const el = document.getElementById(id);
+          if (el) el.value = value;
+        });
+        (data.rows && data.rows.length ? data.rows : defaultRows).forEach((r, i) => rowTemplate(r, i + 1));
+        recalc();
+      } catch (e) {
+        defaultRows.forEach((r, i) => rowTemplate(r, i + 1));
+        recalc();
+      }
+    }
+
+    function resetAll() {
+      if (!confirm('确定清空当前测算表？')) return;
+      localStorage.removeItem('exportTaxRefundCalculator');
+      tbody.innerHTML = '';
+      ['sheetNo','handler','customer'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('sheetNo').value = 'CK-2026-001';
+      document.getElementById('tradeTerm').value = 'FOB';
+      document.getElementById('currency').value = 'USD';
+      document.getElementById('exportUsd').value = '0';
+      document.getElementById('exchangeRate').value = '7.10';
+      ['feeDomestic','feeInternational','feePort','feeOperating','feeBank','feeOther'].forEach(id => document.getElementById(id).value = '0');
+      document.getElementById('calcDate').valueAsDate = new Date();
+      defaultRows.forEach((r, i) => rowTemplate(r, i + 1));
+      recalc();
+    }
+
+    function exportCsv() {
+      recalc();
+      const header = ['序号','项目名称','HS编码','类型','数量','含税单价','采购含税金额','专票税率%','退税率%','采购不含税','进项税额','预计退税额','不予退税额','退税后成本','供应商/备注'];
+      const rows = [header];
+      [...tbody.children].forEach((tr, i) => {
+        rows.push([
+          i + 1,
+          tr.querySelector('.name').value,
+          tr.querySelector('.hs').value,
+          tr.querySelector('.kind').value === 'refund' ? '可退税' : '不可退税',
+          tr.querySelector('.qty').value,
+          tr.querySelector('.price').value,
+          tr.querySelector('.amountVat').value || (num(tr.querySelector('.qty').value) * num(tr.querySelector('.price').value)).toFixed(2),
+          tr.querySelector('.vatRate').value,
+          tr.querySelector('.refundRate').value,
+          tr.querySelector('.noVat').textContent.replace('¥','').replaceAll(',',''),
+          tr.querySelector('.inputVat').textContent.replace('¥','').replaceAll(',',''),
+          tr.querySelector('.refund').textContent.replace('¥','').replaceAll(',',''),
+          tr.querySelector('.nonRefund').textContent.replace('¥','').replaceAll(',',''),
+          tr.querySelector('.netCost').textContent.replace('¥','').replaceAll(',',''),
+          tr.querySelector('.supplier').value
+        ]);
+      });
+      rows.push([]);
+      rows.push(['出口金额USD', document.getElementById('exportUsd').value, '汇率', document.getElementById('exchangeRate').value, '出口收入人民币', document.getElementById('rmbIncome').textContent.replace('¥','').replaceAll(',','')]);
+      rows.push(['预计退税额合计', document.getElementById('refundTotal').textContent.replace('¥','').replaceAll(',',''), '费用合计', document.getElementById('feeTotal').textContent.replace('¥','').replaceAll(',',''), '退税后利润', document.getElementById('profitTotal').textContent.replace('¥','').replaceAll(',','')]);
+      const csv = '\ufeff' + rows.map(r => r.map(cell => '"' + String(cell ?? '').replaceAll('"','""') + '"').join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '外贸订单退税测算表.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.querySelectorAll('input,select').forEach(el => el.addEventListener('input', recalc));
+    loadLocal();
+  </script>
 </body>
 </html>
