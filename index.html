@@ -237,6 +237,27 @@
   color: #66746a;
   font-size: 13px;
   margin-top: 8px;
+}.formula-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink);
+  list-style: none;
+}
+
+.formula-details summary::after {
+  content: " 点击展开";
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.formula-details[open] summary::after {
+  content: " 点击收起";
+}
+
+.formula-details .formula {
+  margin-top: 12px;
 }
 </style>
 </head>
@@ -249,15 +270,15 @@
   <p class="sub">适用于含税采购、实际税点、出口退税、订单费用扣除后的真实利润测算，帮助快速判断订单是否盈利。 </p>
   <p class="developer">Developed by @Vishwa</p>
 </div>
-      <div class="note-card">
-        <h2>业务计算口径</h2>
-        <div class="formula">
-          <div>不含税金额 = 工厂实付开票额 ÷ 1.13</div>
-          <div>税点差额收益 = 不含税 × (13% - 实际税点)</div>
-          <div>预计退税额 = 不含税金额 × 退税率</div>
-          <div>真实利润 = 出口收入 - 工厂实付 + 退税 + 税点差额 - 全部费用</div>
-        </div>
-      </div>
+<details class="note-card formula-details">
+  <summary>业务计算口径</summary>
+  <div class="formula">
+    <div>不含税金额 = 工厂实付开票额 ÷ 1.13</div>
+    <div>税点差额收益 = 不含税金额 ×（13% - 实际税点）</div>
+    <div>预计退税额 = 不含税金额 × 退税率</div>
+    <div>真实利润 = 出口收入 - 工厂实付 + 退税 + 税点差额 - 全部费用</div>
+  </div>
+</details>
     </section>
 
     <section class="block">
